@@ -18,6 +18,7 @@ interface Props {
   result: AnalysisResult | null;
   onStartQuiz: () => void;
   onViewMindmap: () => void;
+  focusMode: boolean;
 }
 
 // ── Reusable section card ───────────────────────────────────────────────────
@@ -32,8 +33,9 @@ function SectionCard({ children, className = "" }: { children: React.ReactNode; 
 export default function HomeView({
   text, setText, level, setLevel, goal, setGoal,
   loading, inputWarning, pdfText,
-  handleAnalyze, result, onStartQuiz, onViewMindmap,
+  handleAnalyze, result, onStartQuiz, onViewMindmap, focusMode,
 }: Props) {
+  const importantCount = result ? Math.max(1, Math.ceil(result.key_points.length * 0.25)) : 0;
   return (
     <div className="space-y-6">
 
@@ -213,13 +215,22 @@ export default function HomeView({
               <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Key Points</h2>
             </div>
             <ul className="space-y-2.5">
-              {result.key_points.map((pt, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm text-slate-600">
-                  <span className="mt-1.5 w-2 h-2 rounded-full shrink-0"
-                    style={{ background: "linear-gradient(135deg, #818cf8, #a78bfa)" }} />
-                  <span className="leading-relaxed">{pt}</span>
-                </li>
-              ))}
+              {result.key_points.map((pt, i) => {
+                const isImportant = i < importantCount;
+                return (
+                  <li key={i} className={`flex items-start gap-3 text-sm text-slate-600 transition-all duration-300 ${
+                    focusMode
+                      ? isImportant
+                        ? "opacity-100 scale-[1.02] border border-indigo-200/60 bg-indigo-50/40 px-3 py-2 rounded-xl shadow-sm"
+                        : "opacity-40 blur-[1px]"
+                      : ""
+                  }`}>
+                    <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${focusMode && isImportant ? "scale-125" : ""}`}
+                      style={{ background: "linear-gradient(135deg, #818cf8, #a78bfa)" }} />
+                    <span className="leading-relaxed">{pt}</span>
+                  </li>
+                );
+              })}
             </ul>
           </SectionCard>
 

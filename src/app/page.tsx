@@ -42,6 +42,9 @@ export default function Home() {
   const [score, setScore] = useState<number | null>(null);
   const [weakTopics, setWeakTopics] = useState<string[]>([]);
 
+  // Focus Mode
+  const [focusMode, setFocusMode] = useState(false);
+
   // ── PDF Upload ─────────────────────────────────────────────────────────────
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -79,6 +82,13 @@ export default function Home() {
       });
       const data = await res.json();
       if (data.error) throw new Error(data.details || data.error);
+      
+      // Inject 'important' flag for Pareto 80/20 on quiz items
+      if (data.quiz && data.quiz.length > 0) {
+        const importantCount = Math.max(1, Math.ceil(data.quiz.length * 0.25));
+        data.quiz = data.quiz.map((q: import("./types").QuizItem, i: number) => ({ ...q, important: i < importantCount }));
+      }
+      
       setResult(data);
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
@@ -156,8 +166,21 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right side: PDF button + Nav */}
+          {/* Right actions */}
           <div className="flex items-center gap-3">
+            {result && (
+              <button
+                type="button"
+                onClick={() => setFocusMode((prev) => !prev)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
+                  focusMode
+                    ? "bg-orange-500 text-white shadow-lg shadow-orange-500/30 scale-105"
+                    : "bg-white/80 text-slate-600 hover:bg-white border border-slate-200"
+                }`}
+              >
+                {focusMode ? "🔥 Focus Mode ON" : "⚡ Focus Mode"}
+              </button>
+            )}
 
             {/* PDF Upload button */}
             <div className="relative">
@@ -256,6 +279,7 @@ export default function Home() {
             handleAnalyze={handleAnalyze} result={result}
             onStartQuiz={startQuiz}
             onViewMindmap={() => setView("mindmap")}
+            focusMode={focusMode}
           />
         )}
 
@@ -269,6 +293,7 @@ export default function Home() {
             handleSubmitQuiz={handleSubmitQuiz}
             onRevise={() => setView("revise")}
             onBack={() => setView("home")}
+            focusMode={focusMode}
           />
         )}
 

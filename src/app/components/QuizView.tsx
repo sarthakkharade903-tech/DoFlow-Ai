@@ -14,9 +14,10 @@ interface Props {
   handleSubmitQuiz: () => void;
   onRevise: () => void;
   onBack: () => void;
+  focusMode: boolean;
 }
 
-export default function QuizView({ quiz, selected, setSelected, submitted, score, weakTopics, handleSubmitQuiz, onRevise, onBack }: Props) {
+export default function QuizView({ quiz, selected, setSelected, submitted, score, weakTopics, handleSubmitQuiz, onRevise, onBack, focusMode }: Props) {
   const [importantOnly, setImportantOnly] = useState(false);
 
   const hasImportant = quiz.some((q) => q.important);
@@ -124,9 +125,15 @@ export default function QuizView({ quiz, selected, setSelected, submitted, score
 
           return (
             <div key={globalIdx}
-              className={`rounded-xl p-4 border transition-all ${
+              className={`rounded-xl p-4 border transition-all duration-300 ${
+                focusMode
+                  ? q.important
+                    ? "scale-[1.02] shadow-md ring-2 ring-indigo-200 bg-indigo-50/20"
+                    : "opacity-40 blur-[1px]"
+                  : ""
+              } ${
                 !submitted
-                  ? "border-transparent"
+                  ? focusMode && q.important ? "border-transparent" : "border-transparent"
                   : isCorrect
                   ? "border-green-200 bg-green-50/40"
                   : "border-red-200 bg-red-50/30"
