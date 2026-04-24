@@ -227,7 +227,11 @@ export default function Home() {
                 <ArrowLeft className="w-4 h-4" /> Back to Notes
               </button>
             </div>
-            <MindmapView summary={result.summary} keyPoints={result.key_points} />
+            <MindmapView
+              summary={result.summary}
+              keyPoints={result.key_points}
+              explanation={result.explanation}
+            />
           </div>
         )}
       </main>

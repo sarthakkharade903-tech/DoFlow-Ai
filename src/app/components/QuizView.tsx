@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { CheckCircle2, XCircle, ArrowLeft, BookOpen } from "lucide-react";
 import { QuizItem } from "../types";
 
@@ -15,6 +16,10 @@ interface Props {
 }
 
 export default function QuizView({ quiz, selected, setSelected, submitted, score, weakTopics, handleSubmitQuiz, onRevise, onBack }: Props) {
+  const [importantOnly, setImportantOnly] = useState(false);
+
+  const hasImportant = quiz.some((q) => q.important);
+  const visibleQuiz = importantOnly ? quiz.filter((q) => q.important) : quiz;
   const getOptionStyle = (qi: number, opt: string, answer: string) => {
     if (!submitted) {
       return selected[qi] === opt
@@ -26,44 +31,65 @@ export default function QuizView({ quiz, selected, setSelected, submitted, score
     return "border-slate-100 bg-slate-50 text-slate-400 opacity-60";
   };
 
+  // ── Header ────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button type="button" onClick={onBack}
           className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Notes
         </button>
         <span className="text-slate-300">|</span>
         <h2 className="text-lg font-bold text-slate-800">Quiz — {quiz.length} Questions</h2>
+
+        {/* Important Only toggle */}
+        {hasImportant && !submitted && (
+          <button
+            type="button"
+            onClick={() => setImportantOnly((p) => !p)}
+            className={`ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+              importantOnly
+                ? "bg-yellow-400 border-yellow-400 text-white shadow-sm"
+                : "bg-white border-yellow-300 text-yellow-700 hover:bg-yellow-50"
+            }`}
+          >
+            ⭐ {importantOnly ? "Showing Important Only" : "Show Important Only"}
+          </button>
+        )}
       </div>
 
       {/* Questions */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-8">
-        {quiz.map((q, qi) => {
-          const userAnswer = selected[qi];
+        {visibleQuiz.map((q, qi) => {
+          const globalIdx = quiz.indexOf(q);
+          const userAnswer = selected[globalIdx];
           const isCorrect = submitted && userAnswer === q.answer;
           const isWrong = submitted && userAnswer !== undefined && userAnswer !== q.answer;
           const isUnanswered = submitted && userAnswer === undefined;
 
           return (
-            <div key={qi} className={`rounded-xl p-4 border transition-all ${!submitted ? "border-transparent" : isCorrect ? "border-green-200 bg-green-50/40" : "border-red-200 bg-red-50/30"}`}>
+            <div key={globalIdx} className={`rounded-xl p-4 border transition-all ${!submitted ? "border-transparent" : isCorrect ? "border-green-200 bg-green-50/40" : "border-red-200 bg-red-50/30"}`}>
               <div className="flex items-start gap-2 mb-3">
                 {submitted && (
                   <span className={`mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${isCorrect ? "bg-green-500" : "bg-red-400"}`}>
                     {isCorrect ? <CheckCircle2 className="w-3.5 h-3.5 text-white" /> : <XCircle className="w-3.5 h-3.5 text-white" />}
                   </span>
                 )}
-                <p className="text-sm font-semibold text-slate-800">Q{qi + 1}. {q.question}</p>
+                <p className="text-sm font-semibold text-slate-800 flex-1">Q{quiz.indexOf(q) + 1}. {q.question}</p>
+                {q.important && (
+                  <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">
+                    ⭐ Important
+                  </span>
+                )}
               </div>
               <div className="space-y-2">
                 {q.options.map((opt, oi) => {
                   const optCorrect = submitted && opt === q.answer;
-                  const optWrong = submitted && selected[qi] === opt && opt !== q.answer;
+                  const optWrong = submitted && selected[globalIdx] === opt && opt !== q.answer;
                   return (
                     <button key={oi} type="button" disabled={submitted}
-                      onClick={() => !submitted && setSelected({ ...selected, [qi]: opt })}
-                      className={`w-full text-left text-sm px-4 py-3 rounded-xl border transition-all flex items-center justify-between gap-2 ${getOptionStyle(qi, opt, q.answer)}`}>
+                      onClick={() => !submitted && setSelected({ ...selected, [globalIdx]: opt })}
+                      className={`w-full text-left text-sm px-4 py-3 rounded-xl border transition-all flex items-center justify-between gap-2 ${getOptionStyle(globalIdx, opt, q.answer)}`}>
                       <span>{opt}</span>
                       {optCorrect && <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />}
                       {optWrong && <XCircle className="w-4 h-4 text-red-500 shrink-0" />}
@@ -85,7 +111,7 @@ export default function QuizView({ quiz, selected, setSelected, submitted, score
       {/* Submit */}
       {!submitted && (
         <button id="submit-quiz-btn" type="button" onClick={handleSubmitQuiz}
-          disabled={Object.keys(selected).length < quiz.length}
+          disabled={visibleQuiz.some((q) => selected[quiz.indexOf(q)] === undefined)}
           className="w-full flex justify-center items-center gap-2 rounded-xl bg-slate-800 px-4 py-4 text-sm font-bold text-white hover:bg-slate-900 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed">
           Submit Quiz
         </button>

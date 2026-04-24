@@ -2,6 +2,7 @@ export interface QuizItem {
   question: string;
   options: string[];
   answer: string;
+  important?: boolean;
 }
 
 export interface AnalysisResult {

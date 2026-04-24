@@ -27,10 +27,13 @@ Return your response in JSON format with EXACTLY this structure. No markdown, no
     {
       "question": "",
       "options": ["", "", "", ""],
-      "answer": ""
+      "answer": "",
+      "important": false
     }
   ]
-}`;
+}
+
+IMPORTANT: In the quiz array, mark the top 2 most exam-relevant questions with "important": true. All others must have "important": false.`;
 
     const userPrompt = `Student Profile:
 - Level: ${level}
@@ -44,6 +47,8 @@ Tasks:
 2. Highlight most important topics
 3. Provide a short summary
 4. Generate 5 MCQ questions with 4 options and correct answer
+   - Mark the 2 most exam-relevant questions with "important": true
+   - Mark the remaining 3 with "important": false
 
 Respond with valid JSON only.`;
 
