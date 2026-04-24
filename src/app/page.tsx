@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Upload, BookOpen, Target, Settings2,
   Sparkles, FileText, Loader2, CheckCircle2,
-  XCircle, ListChecks, AlignLeft, ClipboardList
+  XCircle, ListChecks, AlignLeft, ClipboardList,
+  X
 } from "lucide-react";
 
 interface QuizItem {
@@ -28,16 +29,64 @@ export default function Home() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // PDF state
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfText, setPdfText] = useState<string | null>(null);
+  const [pdfParsing, setPdfParsing] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Quiz state
   const [selected, setSelected] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState<number | null>(null);
 
+  // ── PDF Upload ────────────────────────────────────────────────────────────
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPdfFile(file);
+    setPdfText(null);
+    setPdfError(null);
+    setPdfParsing(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("pdf", file);
+
+      const res = await fetch("/api/parse-pdf", { method: "POST", body: formData });
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        setPdfError(data.error || "Failed to parse PDF.");
+        setPdfFile(null);
+      } else {
+        setPdfText(data.text);
+      }
+    } catch {
+      setPdfError("Failed to upload PDF. Please try again.");
+      setPdfFile(null);
+    } finally {
+      setPdfParsing(false);
+    }
+  };
+
+  const removePdf = () => {
+    setPdfFile(null);
+    setPdfText(null);
+    setPdfError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // ── Analyze ───────────────────────────────────────────────────────────────
   const handleAnalyze = async () => {
-    if (!text.trim()) {
-      alert("Please enter some text before analyzing.");
+    const contentToSend = pdfText || text.trim();
+    if (!contentToSend) {
+      alert("Please upload a PDF or enter some text before analyzing.");
       return;
     }
+
     setLoading(true);
     setResult(null);
     setError(null);
@@ -49,7 +98,7 @@ export default function Home() {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, level, goal }),
+        body: JSON.stringify({ text: contentToSend, level, goal }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.details || data.error);
@@ -61,6 +110,7 @@ export default function Home() {
     }
   };
 
+  // ── Quiz Submit ───────────────────────────────────────────────────────────
   const handleSubmitQuiz = () => {
     if (!result) return;
     let correct = 0;
@@ -82,9 +132,9 @@ export default function Home() {
     return "border-slate-200 bg-white text-slate-400";
   };
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-indigo-100">
-      {/* Background */}
       <div className="fixed inset-0 -z-10 bg-slate-50 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.25),transparent)]" />
       </div>
@@ -106,24 +156,72 @@ export default function Home() {
         <div className="w-full bg-white/80 backdrop-blur-xl border border-slate-200/60 shadow-xl rounded-3xl p-6 md:p-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-            {/* Left: Input */}
+            {/* Left: Inputs */}
             <div className="space-y-6">
-              {/* File Upload */}
+
+              {/* File Upload Zone */}
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                   <Upload className="w-4 h-4 text-indigo-500" /> Upload Document (PDF)
                 </label>
-                <div className="group relative flex flex-col items-center justify-center py-7 px-4 border-2 border-dashed border-slate-300 rounded-2xl hover:border-indigo-400 hover:bg-slate-50 transition-colors cursor-pointer bg-slate-50/50">
-                  <div className="p-3 bg-white shadow-sm rounded-full mb-3 group-hover:scale-110 transition-all">
-                    <FileText className="w-6 h-6 text-indigo-500" />
+
+                {/* Parsed successfully */}
+                {pdfFile && pdfText && (
+                  <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-green-300 bg-green-50 text-sm">
+                    <div className="flex items-center gap-2 text-green-700 font-medium min-w-0">
+                      <CheckCircle2 className="w-4 h-4 shrink-0 text-green-600" />
+                      <span className="truncate">{pdfFile.name}</span>
+                    </div>
+                    <button onClick={removePdf} className="text-slate-400 hover:text-red-500 transition-colors shrink-0">
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
-                  <p className="text-sm text-slate-600 mb-1">
-                    <span className="text-indigo-600 font-semibold">Click to upload</span> or drag & drop
-                  </p>
-                  <p className="text-xs text-slate-400">PDF up to 10MB</p>
-                  <input type="file" accept=".pdf" className="absolute inset-0 opacity-0 cursor-pointer" />
-                </div>
+                )}
+
+                {/* Parsing */}
+                {pdfParsing && (
+                  <div className="flex items-center gap-2 px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 text-sm text-slate-600">
+                    <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+                    Extracting text from PDF...
+                  </div>
+                )}
+
+                {/* PDF Error */}
+                {pdfError && (
+                  <div className="flex items-center gap-2 px-4 py-3 rounded-2xl border border-red-200 bg-red-50 text-sm text-red-700">
+                    <XCircle className="w-4 h-4 shrink-0" />
+                    {pdfError}
+                  </div>
+                )}
+
+                {/* Drop zone (hide when file loaded) */}
+                {!pdfFile && !pdfParsing && (
+                  <div className="group relative flex flex-col items-center justify-center py-7 px-4 border-2 border-dashed border-slate-300 rounded-2xl hover:border-indigo-400 hover:bg-slate-50 transition-colors cursor-pointer bg-slate-50/50">
+                    <div className="p-3 bg-white shadow-sm rounded-full mb-3 group-hover:scale-110 transition-all">
+                      <FileText className="w-6 h-6 text-indigo-500" />
+                    </div>
+                    <p className="text-sm text-slate-600 mb-1">
+                      <span className="text-indigo-600 font-semibold">Click to upload</span> or drag & drop
+                    </p>
+                    <p className="text-xs text-slate-400">PDF up to 10MB</p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      onChange={handleFileChange}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                  </div>
+                )}
               </div>
+
+              {/* "Using PDF" notice */}
+              {pdfText && (
+                <div className="flex items-center gap-2 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2">
+                  <FileText className="w-3.5 h-3.5" />
+                  Using uploaded PDF content
+                </div>
+              )}
 
               {/* Divider */}
               <div className="flex items-center gap-4">
@@ -142,13 +240,14 @@ export default function Home() {
                   rows={6}
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder="Paste your text, concepts, or questions here..."
-                  className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm"
+                  disabled={!!pdfText}
+                  placeholder={pdfText ? "PDF content is being used…" : "Paste your text, concepts, or questions here..."}
+                  className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
 
-            {/* Right: Preferences */}
+            {/* Right: Preferences + Button */}
             <div className="flex flex-col justify-between bg-slate-50/50 border border-slate-100 rounded-2xl p-6 md:p-8 space-y-6">
               <div className="space-y-6">
                 <div>
@@ -203,12 +302,11 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Analyze Button */}
               <button
                 id="analyze-btn"
                 type="button"
                 onClick={handleAnalyze}
-                disabled={loading}
+                disabled={loading || pdfParsing}
                 className="w-full flex justify-center items-center gap-2 rounded-xl bg-indigo-600 px-4 py-4 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/40 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading ? (
@@ -221,7 +319,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Error */}
+        {/* Global Error */}
         {error && (
           <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700 font-medium shadow-sm">
             ⚠️ {error}
