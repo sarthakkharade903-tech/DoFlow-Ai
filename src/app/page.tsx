@@ -28,6 +28,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [inputWarning, setInputWarning] = useState<string | null>(null);
 
   // PDF state
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -83,9 +84,10 @@ export default function Home() {
   const handleAnalyze = async () => {
     const contentToSend = pdfText || text.trim();
     if (!contentToSend) {
-      alert("Please upload a PDF or enter some text before analyzing.");
+      setInputWarning("Please paste some notes or upload a PDF before analyzing.");
       return;
     }
+    setInputWarning(null);
 
     setLoading(true);
     setResult(null);
@@ -151,7 +153,7 @@ export default function Home() {
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">AI Study Companion</h1>
           <p className="text-lg text-slate-500 max-w-xl mx-auto">
-            Paste your notes or upload a PDF to get explanations, key points, a summary, and a quiz.
+            Turn notes into understanding and quizzes
           </p>
         </div>
 
@@ -242,12 +244,26 @@ export default function Home() {
                   id="study-notes"
                   rows={6}
                   value={text}
-                  onChange={(e) => setText(e.target.value)}
+                  onChange={(e) => { setText(e.target.value); setInputWarning(null); }}
                   disabled={!!pdfText}
                   placeholder={pdfText ? "PDF content is being used…" : "Paste your text, concepts, or questions here..."}
-                  className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                  className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm placeholder:text-slate-400 focus:ring-4 outline-none transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed ${
+                    inputWarning
+                      ? "border-amber-400 bg-amber-50/50 focus:border-amber-400 focus:ring-amber-400/10"
+                      : "border-slate-200 bg-slate-50/50 focus:border-indigo-500 focus:ring-indigo-500/10"
+                  }`}
                 />
               </div>
+
+              {/* Inline input warning */}
+              {inputWarning && (
+                <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 font-medium">
+                  <svg className="w-4 h-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  </svg>
+                  {inputWarning}
+                </div>
+              )}
             </div>
 
             {/* Right: Preferences + Button */}
@@ -324,8 +340,29 @@ export default function Home() {
 
         {/* Global Error */}
         {error && (
-          <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700 font-medium shadow-sm">
-            ⚠️ {error}
+          <div className="mt-8 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700 font-medium shadow-sm">
+            <XCircle className="w-5 h-5 shrink-0 mt-0.5 text-red-500" />
+            <div>
+              <p className="font-semibold">Something went wrong</p>
+              <p className="mt-0.5 font-normal text-red-600">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Loading skeleton */}
+        {loading && (
+          <div className="mt-10 space-y-4">
+            {["Generating explanation...", "Identifying key points...", "Writing summary...", "Creating quiz questions..."].map((label, i) => (
+              <div key={i} className="flex items-center gap-4 bg-white border border-slate-200 rounded-2xl px-6 py-5 shadow-sm">
+                <Loader2 className="w-5 h-5 animate-spin text-indigo-400 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{label}</p>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-indigo-200 rounded-full animate-pulse" style={{ width: `${60 + i * 10}%` }} />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -482,6 +519,13 @@ export default function Home() {
           </div>
         )}
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-200 bg-white/60 backdrop-blur-sm py-5 mt-8">
+        <p className="text-center text-xs text-slate-400 font-medium tracking-wide">
+          Built for Hackathon &nbsp;·&nbsp; AI Study Companion
+        </p>
+      </footer>
     </div>
   );
 }
