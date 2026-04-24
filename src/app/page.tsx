@@ -1,12 +1,22 @@
 "use client";
 
 import { useState, useRef } from "react";
+import dynamic from "next/dynamic";
 import {
   Upload, BookOpen, Target, Settings2,
   Sparkles, FileText, Loader2, CheckCircle2,
   XCircle, ListChecks, AlignLeft, ClipboardList,
-  X
+  X, GitFork, LayoutList
 } from "lucide-react";
+
+const MindmapView = dynamic(() => import("./components/MindmapView"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-64 rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+    </div>
+  ),
+});
 
 interface QuizItem {
   question: string;
@@ -41,6 +51,9 @@ export default function Home() {
   const [selected, setSelected] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState<number | null>(null);
+
+  // View toggle
+  const [viewMode, setViewMode] = useState<"notes" | "mindmap">("notes");
 
   // ── PDF Upload ────────────────────────────────────────────────────────────
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,6 +108,7 @@ export default function Home() {
     setSelected({});
     setSubmitted(false);
     setScore(null);
+    setViewMode("notes");
 
     try {
       const res = await fetch("/api/analyze", {
@@ -370,6 +384,47 @@ export default function Home() {
         {result && (
           <div className="mt-10 space-y-6">
 
+            {/* View Toggle */}
+            <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl w-fit">
+              <button
+                id="notes-view-btn"
+                type="button"
+                onClick={() => setViewMode("notes")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  viewMode === "notes"
+                    ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <LayoutList className="w-4 h-4" />
+                Notes View
+              </button>
+              <button
+                id="mindmap-view-btn"
+                type="button"
+                onClick={() => setViewMode("mindmap")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  viewMode === "mindmap"
+                    ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <GitFork className="w-4 h-4" />
+                Mindmap View
+              </button>
+            </div>
+
+            {/* ── Mindmap View ─────────────────────────────────────────── */}
+            {viewMode === "mindmap" && (
+              <MindmapView
+                summary={result.summary}
+                keyPoints={result.key_points}
+              />
+            )}
+
+            {/* ── Notes View ───────────────────────────────────────────── */}
+            {viewMode === "notes" && (<>
+
             {/* Explanation */}
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <h2 className="text-base font-bold text-slate-800 flex items-center gap-2 mb-3">
@@ -516,6 +571,7 @@ export default function Home() {
                 </div>
               )}
             </div>
+            </>) /* end notes view */}
           </div>
         )}
       </main>
