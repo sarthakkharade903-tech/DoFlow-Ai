@@ -55,6 +55,9 @@ export default function Home() {
   // View toggle
   const [viewMode, setViewMode] = useState<"notes" | "mindmap">("notes");
 
+  // 80/20 Focus Mode
+  const [focusMode, setFocusMode] = useState(false);
+
   // ── PDF Upload ────────────────────────────────────────────────────────────
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -109,6 +112,7 @@ export default function Home() {
     setSubmitted(false);
     setScore(null);
     setViewMode("notes");
+    setFocusMode(false);
 
     try {
       const res = await fetch("/api/analyze", {
@@ -165,7 +169,11 @@ export default function Home() {
           <div className="inline-flex items-center justify-center p-3 bg-indigo-100 text-indigo-600 rounded-2xl ring-1 ring-indigo-200 shadow-sm mb-1">
             <Sparkles className="w-8 h-8" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">AI Study Companion</h1>
+          <h1 className="text-5xl md:text-6xl font-black tracking-tight">
+            <span className="bg-gradient-to-r from-violet-600 via-indigo-600 to-indigo-500 bg-clip-text text-transparent">
+              DoFlow
+            </span>
+          </h1>
           <p className="text-lg text-slate-500 max-w-xl mx-auto">
             Turn notes into understanding and quizzes
           </p>
@@ -384,35 +392,66 @@ export default function Home() {
         {result && (
           <div className="mt-10 space-y-6">
 
-            {/* View Toggle */}
-            <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl w-fit">
+            {/* Toolbar: View Toggle + Focus Mode */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+
+              {/* View toggle pill */}
+              <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl">
+                <button
+                  id="notes-view-btn"
+                  type="button"
+                  onClick={() => setViewMode("notes")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    viewMode === "notes"
+                      ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  <LayoutList className="w-4 h-4" />
+                  Notes View
+                </button>
+                <button
+                  id="mindmap-view-btn"
+                  type="button"
+                  onClick={() => setViewMode("mindmap")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    viewMode === "mindmap"
+                      ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  <GitFork className="w-4 h-4" />
+                  Mindmap View
+                </button>
+              </div>
+
+              {/* 80/20 Focus Mode button */}
               <button
-                id="notes-view-btn"
+                id="focus-mode-btn"
                 type="button"
-                onClick={() => setViewMode("notes")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                  viewMode === "notes"
-                    ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200"
-                    : "text-slate-500 hover:text-slate-700"
+                onClick={() => setFocusMode((prev) => !prev)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
+                  focusMode
+                    ? "bg-amber-400 border-amber-400 text-white shadow-md shadow-amber-200"
+                    : "bg-white border-amber-300 text-amber-700 hover:bg-amber-50"
                 }`}
               >
-                <LayoutList className="w-4 h-4" />
-                Notes View
-              </button>
-              <button
-                id="mindmap-view-btn"
-                type="button"
-                onClick={() => setViewMode("mindmap")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                  viewMode === "mindmap"
-                    ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                <GitFork className="w-4 h-4" />
-                Mindmap View
+                <span>⚡</span>
+                {focusMode ? "80/20 Mode ON" : "80/20 Focus Mode"}
               </button>
             </div>
+
+            {/* Focus Mode banner */}
+            {focusMode && (
+              <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3">
+                <span className="text-lg">⚡</span>
+                <div>
+                  <p className="text-sm font-bold text-amber-800">Focus Mode Active</p>
+                  <p className="text-xs text-amber-600">Focus on the most important 20% for maximum results</p>
+                </div>
+                <span className="ml-auto text-xs font-semibold text-amber-500 bg-amber-100 px-2 py-1 rounded-lg">Top 3 only</span>
+              </div>
+            )}
 
             {/* ── Mindmap View ─────────────────────────────────────────── */}
             {viewMode === "mindmap" && (
@@ -425,21 +464,26 @@ export default function Home() {
             {/* ── Notes View ───────────────────────────────────────────── */}
             {viewMode === "notes" && (<>
 
-            {/* Explanation */}
+            {/* Explanation — hidden in focus mode */}
+            {!focusMode && (
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <h2 className="text-base font-bold text-slate-800 flex items-center gap-2 mb-3">
                 <AlignLeft className="w-5 h-5 text-indigo-500" /> Explanation
               </h2>
               <p className="text-sm text-slate-700 leading-relaxed">{result.explanation}</p>
             </div>
+            )}
 
-            {/* Key Points */}
+            {/* Key Points — sliced to 3 in focus mode */}
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <h2 className="text-base font-bold text-slate-800 flex items-center gap-2 mb-3">
                 <ListChecks className="w-5 h-5 text-indigo-500" /> Key Points
+                {focusMode && (
+                  <span className="ml-auto text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg">Top 3</span>
+                )}
               </h2>
               <ul className="space-y-2">
-                {result.key_points.map((pt, i) => (
+                {(focusMode ? result.key_points.slice(0, 3) : result.key_points).map((pt, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
                     <span className="mt-1 w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
                     {pt}
@@ -456,14 +500,17 @@ export default function Home() {
               <p className="text-sm text-indigo-900 leading-relaxed">{result.summary}</p>
             </div>
 
-            {/* Quiz */}
+            {/* Quiz — sliced to 3 in focus mode */}
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <h2 className="text-base font-bold text-slate-800 flex items-center gap-2 mb-6">
                 <Sparkles className="w-5 h-5 text-indigo-500" /> Quiz
+                {focusMode && (
+                  <span className="ml-auto text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg">Top 3 questions</span>
+                )}
               </h2>
 
               <div className="space-y-8">
-                {result.quiz.map((q, qi) => {
+                {(focusMode ? result.quiz.slice(0, 3) : result.quiz).map((q, qi) => {
                   const userAnswer = selected[qi];
                   const isCorrect = submitted && userAnswer === q.answer;
                   const isWrong = submitted && userAnswer !== undefined && userAnswer !== q.answer;
@@ -536,7 +583,7 @@ export default function Home() {
                   id="submit-quiz-btn"
                   type="button"
                   onClick={handleSubmitQuiz}
-                  disabled={Object.keys(selected).length < result.quiz.length}
+                  disabled={Object.keys(selected).length < (focusMode ? Math.min(3, result.quiz.length) : result.quiz.length)}
                   className="mt-8 w-full flex justify-center items-center gap-2 rounded-xl bg-slate-800 px-4 py-3 text-sm font-bold text-white hover:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-500/30 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Submit Quiz
