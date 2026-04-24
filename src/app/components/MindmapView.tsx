@@ -191,6 +191,9 @@ export default function MindmapView({ summary, keyPoints, explanation }: Mindmap
               label="Download Mindmap"
               filename="mindmap.txt"
               getContent={() => [
+                "=== MINDMAP — SUMMARY ===",
+                summary,
+                "",
                 "=== MINDMAP — KEY POINTS ===",
                 keyPoints.map((pt, i) => `${i + 1}. ${pt}`).join("\n"),
               ].join("\n")}

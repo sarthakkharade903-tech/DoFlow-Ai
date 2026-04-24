@@ -298,12 +298,14 @@ export default function Home() {
         )}
 
         {/* REVISE VIEW */}
-        {view === "revise" && result && weakTopics.length > 0 && (
+        {view === "revise" && result && (
           <ReviseView
             explanation={result.explanation}
             key_points={result.key_points}
             weakTopics={weakTopics}
-            onBack={() => setView("home")}
+            score={score}
+            total={result.quiz.length}
+            onBack={() => setView("quiz")}
           />
         )}
 

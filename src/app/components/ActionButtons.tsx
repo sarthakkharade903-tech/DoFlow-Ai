@@ -4,14 +4,37 @@ import { Copy, Download, Share2, Check } from "lucide-react";
 
 // ── tiny shared helpers ───────────────────────────────────────────────────────
 
-function downloadTxt(filename: string, content: string) {
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+import { jsPDF } from "jspdf";
+
+function downloadPDF(filename: string, content: string) {
+  const pdfFilename = filename.replace(/\.txt$/, ".pdf");
+  const title = pdfFilename.replace(/\.pdf$/, "").toUpperCase();
+
+  const doc = new jsPDF();
+  
+  // Keep formatting simple: Title bold
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text(`DoFlow ${title}`, 20, 20);
+
+  // Line spacing readable
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+
+  // Auto split lines
+  const splitText = doc.splitTextToSize(content, 170);
+  
+  let y = 30;
+  for (let i = 0; i < splitText.length; i++) {
+    if (y > 280) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.text(splitText[i], 20, y);
+    y += 7; // readable line spacing
+  }
+
+  doc.save(pdfFilename);
 }
 
 // ── CopyButton ────────────────────────────────────────────────────────────────
@@ -70,7 +93,7 @@ export function DownloadButton({ label, filename, getContent }: DownloadButtonPr
   return (
     <button
       type="button"
-      onClick={() => downloadTxt(filename, getContent())}
+      onClick={() => downloadPDF(filename, getContent())}
       title={label}
       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all
         border-slate-200 bg-white text-slate-600 hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50

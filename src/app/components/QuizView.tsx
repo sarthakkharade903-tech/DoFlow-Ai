@@ -3,6 +3,7 @@ import { useState } from "react";
 import { CheckCircle2, XCircle, ArrowLeft, BookOpen, Zap } from "lucide-react";
 import { QuizItem } from "../types";
 import { ActionBar, CopyButton, DownloadButton } from "./ActionButtons";
+import ProgressBar from "./ProgressBar";
 
 interface Props {
   quiz: QuizItem[];
@@ -95,6 +96,11 @@ export default function QuizView({ quiz, selected, setSelected, submitted, score
           </div>
         )}
       </div>
+
+      {/* Duolingo-style Progress Bar */}
+      {submitted && score !== null && (
+        <ProgressBar score={score} total={quiz.length} />
+      )}
 
       {/* Progress bar (pre-submit) */}
       {!submitted && (

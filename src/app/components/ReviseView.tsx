@@ -1,14 +1,17 @@
 "use client";
 import { AlignLeft, ListChecks, ArrowLeft, Target } from "lucide-react";
+import ProgressBar from "./ProgressBar";
 
 interface Props {
   explanation: string;
   key_points: string[];
   weakTopics: string[];
+  score: number | null;
+  total: number;
   onBack: () => void;
 }
 
-export default function ReviseView({ explanation, key_points, weakTopics, onBack }: Props) {
+export default function ReviseView({ explanation, key_points, weakTopics, score, total, onBack }: Props) {
   const revisedSentences = explanation
     .split(/(?<=[.!?])\s+/)
     .filter((s) => weakTopics.some((kw) => s.toLowerCase().includes(kw)));
@@ -29,6 +32,9 @@ export default function ReviseView({ explanation, key_points, weakTopics, onBack
           <ArrowLeft className="w-4 h-4" /> Back to Notes
         </button>
       </div>
+
+      {/* Duolingo-style Progress Bar */}
+      <ProgressBar score={score} total={total} />
 
       {/* Banner */}
       <div className="rounded-2xl border border-orange-200/80 overflow-hidden shadow-sm"
