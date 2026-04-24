@@ -6,6 +6,7 @@ import {
   AlignLeft, ListChecks, ClipboardList, X, Play, GitFork,
 } from "lucide-react";
 import { AnalysisResult } from "../types";
+import { ActionBar, CopyButton, DownloadButton, WhatsAppShareButton } from "./ActionButtons";
 
 interface Props {
   text: string; setText: (v: string) => void;
@@ -196,11 +197,35 @@ export default function HomeView({
 
           {/* Summary */}
           <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-6 shadow-sm">
-            <h2 className="text-base font-bold text-indigo-800 flex items-center gap-2 mb-3">
-              <ClipboardList className="w-5 h-5 text-indigo-500" /> Summary
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <h2 className="text-base font-bold text-indigo-800 flex items-center gap-2">
+                <ClipboardList className="w-5 h-5 text-indigo-500" /> Summary
+              </h2>
+              <ActionBar>
+                <CopyButton label="Copy Summary" getText={() => result.summary} />
+                <WhatsAppShareButton getText={() => result.summary} />
+              </ActionBar>
+            </div>
             <p className="text-sm text-indigo-900 leading-relaxed">{result.summary}</p>
           </div>
+
+          {/* Download Notes */}
+          <ActionBar>
+            <DownloadButton
+              label="Download Notes"
+              filename="notes.txt"
+              getContent={() => [
+                "=== SUMMARY ===",
+                result.summary,
+                "",
+                "=== KEY POINTS ===",
+                result.key_points.map((pt, i) => `${i + 1}. ${pt}`).join("\n"),
+                "",
+                "=== EXPLANATION ===",
+                result.explanation,
+              ].join("\n")}
+            />
+          </ActionBar>
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-2">

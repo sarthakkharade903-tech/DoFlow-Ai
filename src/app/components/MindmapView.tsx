@@ -6,6 +6,7 @@ import ReactFlow, {
   BackgroundVariant, NodeMouseHandler,
 } from "react-flow-renderer";
 import { X } from "lucide-react";
+import { ActionBar, CopyButton, DownloadButton } from "./ActionButtons";
 
 interface MindmapViewProps {
   summary: string;
@@ -168,15 +169,31 @@ export default function MindmapView({ summary, keyPoints, explanation }: Mindmap
   return (
     <div className="w-full rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-2 px-6 py-4 border-b border-slate-100 bg-slate-50/60">
+      <div className="flex flex-wrap items-center gap-2 px-6 py-4 border-b border-slate-100 bg-slate-50/60">
         <svg className="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <circle cx="12" cy="12" r="3" />
           <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" />
         </svg>
         <span className="text-sm font-semibold text-slate-700">Concept Mindmap</span>
-        <span className="ml-auto text-xs text-slate-400">
+        <span className="text-xs text-slate-400">
           {keyPoints.length} key points · click a node to explore
         </span>
+        <div className="ml-auto">
+          <ActionBar>
+            <CopyButton
+              label="Copy Mindmap"
+              getText={() => keyPoints.map((pt, i) => `${i + 1}. ${pt}`).join("\n")}
+            />
+            <DownloadButton
+              label="Download Mindmap"
+              filename="mindmap.txt"
+              getContent={() => [
+                "=== MINDMAP — KEY POINTS ===",
+                keyPoints.map((pt, i) => `${i + 1}. ${pt}`).join("\n"),
+              ].join("\n")}
+            />
+          </ActionBar>
+        </div>
       </div>
 
       {/* Flow canvas — relative so popup can be positioned inside */}

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { CheckCircle2, XCircle, ArrowLeft, BookOpen } from "lucide-react";
 import { QuizItem } from "../types";
+import { ActionBar, CopyButton, DownloadButton } from "./ActionButtons";
 
 interface Props {
   quiz: QuizItem[];
@@ -31,6 +32,17 @@ export default function QuizView({ quiz, selected, setSelected, submitted, score
     return "border-slate-100 bg-slate-50 text-slate-400 opacity-60";
   };
 
+  // ── Helpers for copy/download ─────────────────────────────────────────────
+  const getQuizText = () =>
+    quiz
+      .map(
+        (q, i) =>
+          `Q${i + 1}. ${q.question}\n` +
+          q.options.map((o, oi) => `  ${String.fromCharCode(65 + oi)}. ${o}`).join("\n") +
+          `\nAnswer: ${q.answer}`
+      )
+      .join("\n\n");
+
   // ── Header ────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
@@ -55,6 +67,14 @@ export default function QuizView({ quiz, selected, setSelected, submitted, score
           >
             ⭐ {importantOnly ? "Showing Important Only" : "Show Important Only"}
           </button>
+        )}
+
+        {/* Copy / Download — visible after submission */}
+        {submitted && (
+          <ActionBar>
+            <CopyButton label="Copy Quiz" getText={getQuizText} />
+            <DownloadButton label="Download Quiz" filename="quiz.txt" getContent={getQuizText} />
+          </ActionBar>
         )}
       </div>
 
