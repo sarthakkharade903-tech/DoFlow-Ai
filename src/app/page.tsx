@@ -28,7 +28,6 @@ export default function Home() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
 
   // PDF
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfText, setPdfText] = useState<string | null>(null);
   const [pdfParsing, setPdfParsing] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -47,20 +46,20 @@ export default function Home() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setPdfFile(file); setPdfText(null); setPdfError(null); setPdfParsing(true);
+    setPdfText(null); setPdfError(null); setPdfParsing(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
       const res = await fetch("/api/parse-pdf", { method: "POST", body: formData });
       const data = await res.json();
-      if (!res.ok || data.error) { setPdfError(data.error || "Failed to parse PDF."); setPdfFile(null); }
+      if (!res.ok || data.error) { setPdfError(data.error || "Failed to parse PDF."); }
       else setPdfText(data.text);
-    } catch { setPdfError("Failed to upload PDF."); setPdfFile(null); }
+    } catch { setPdfError("Failed to upload PDF."); }
     finally { setPdfParsing(false); }
   };
 
   const removePdf = () => {
-    setPdfFile(null); setPdfText(null); setPdfError(null);
+    setPdfText(null); setPdfError(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -81,8 +80,9 @@ export default function Home() {
       const data = await res.json();
       if (data.error) throw new Error(data.details || data.error);
       setResult(data);
-    } catch (err: any) {
-      setError(err.message || "Something went wrong.");
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message);
+      else setError("Something went wrong.");
     } finally { setLoading(false); }
   };
 

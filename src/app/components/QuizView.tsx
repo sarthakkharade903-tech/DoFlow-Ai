@@ -115,7 +115,7 @@ export default function QuizView({ quiz, selected, setSelected, submitted, score
 
       {/* Questions */}
       <div className="rounded-2xl border border-slate-200/70 bg-white/80 backdrop-blur-md p-6 shadow-sm space-y-7">
-        {visibleQuiz.map((q, qi) => {
+        {visibleQuiz.map((q) => {
           const globalIdx = quiz.indexOf(q);
           const userAnswer = selected[globalIdx];
           const isCorrect = submitted && userAnswer === q.answer;

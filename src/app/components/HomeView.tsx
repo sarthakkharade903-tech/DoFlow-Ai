@@ -1,6 +1,6 @@
 "use client";
 import {
-  BookOpen, Target, Settings2, Sparkles,
+  BookOpen, Target, Settings2,
   FileText, Loader2, AlignLeft, ListChecks,
   ClipboardList, Play, GitFork,
 } from "lucide-react";
