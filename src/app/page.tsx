@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import dynamic from "next/dynamic";
-import { Sparkles, Loader2, LayoutList, GitFork, BookOpen, ArrowLeft } from "lucide-react";
+import { Sparkles, Loader2, LayoutList, GitFork, BookOpen, ArrowLeft, FileUp, FileCheck2, X } from "lucide-react";
 import { AnalysisResult, View } from "./types";
 import HomeView from "./components/HomeView";
 import QuizView from "./components/QuizView";
@@ -11,7 +11,7 @@ import ReviseView from "./components/ReviseView";
 const MindmapView = dynamic(() => import("./components/MindmapView"), {
   ssr: false,
   loading: () => (
-    <div className="flex items-center justify-center h-64 rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="flex items-center justify-center h-64 rounded-2xl border border-slate-200 bg-white/70 shadow-sm">
       <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
     </div>
   ),
@@ -121,81 +121,145 @@ export default function Home() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-indigo-100">
-      {/* Background */}
-      <div className="fixed inset-0 -z-10 bg-slate-50 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.25),transparent)]" />
+    <div className="min-h-screen font-sans text-slate-800 selection:bg-indigo-100"
+      style={{ background: "linear-gradient(135deg, #f5f6fa 0%, #eef0fb 50%, #f0f4ff 100%)" }}>
+
+      {/* Ambient background orbs */}
+      <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full opacity-20"
+          style={{ background: "radial-gradient(circle, #a5b4fc 0%, transparent 70%)" }} />
+        <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full opacity-15"
+          style={{ background: "radial-gradient(circle, #c4b5fd 0%, transparent 70%)" }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] opacity-10"
+          style={{ background: "radial-gradient(ellipse, #818cf8 0%, transparent 70%)" }} />
       </div>
 
-      {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between gap-6">
-          {/* Brand */}
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-20 border-b border-white/60"
+        style={{ background: "rgba(255,255,255,0.75)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+
+          {/* Brand + tagline */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl ring-1 ring-indigo-200">
-              <Sparkles className="w-5 h-5" />
+            <div className="p-2 rounded-xl ring-1 ring-indigo-200"
+              style={{ background: "linear-gradient(135deg, #eef2ff, #e0e7ff)" }}>
+              <Sparkles className="w-5 h-5 text-indigo-600" />
             </div>
-            <span className="text-xl font-black tracking-tight bg-gradient-to-r from-violet-600 via-indigo-600 to-indigo-500 bg-clip-text text-transparent">
-              DoFlow
-            </span>
+            <div>
+              <span className="text-lg font-black tracking-tight"
+                style={{ background: "linear-gradient(135deg, #6366f1, #7c3aed)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                DoFlow
+              </span>
+              <p className="text-[10px] font-medium text-slate-400 leading-none mt-0.5 hidden sm:block">
+                Turn notes into understanding
+              </p>
+            </div>
           </div>
 
-          {/* Nav tabs — only after result */}
-          {result && (
-            <nav className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  disabled={tab.disabled}
-                  onClick={() => !tab.disabled && setView(tab.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    view === tab.id
-                      ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200"
-                      : tab.disabled
-                      ? "text-slate-300 cursor-not-allowed"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  {tab.icon}
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </button>
-              ))}
-            </nav>
-          )}
+          {/* Right side: PDF button + Nav */}
+          <div className="flex items-center gap-3">
+
+            {/* PDF Upload button */}
+            <div className="relative">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={handleFileChange}
+                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+              />
+              {pdfText ? (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-green-200 bg-green-50 text-green-700">
+                  <FileCheck2 className="w-3.5 h-3.5" />
+                  <span>PDF loaded</span>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); removePdf(); }}
+                    className="ml-1 text-green-500 hover:text-red-500 transition-colors z-20 relative"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : pdfParsing ? (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-indigo-200 bg-indigo-50 text-indigo-600">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Parsing…</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700 hover:bg-indigo-50 transition-all cursor-pointer shadow-sm">
+                  <FileUp className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Upload PDF</span>
+                  <span className="sm:hidden">PDF</span>
+                </div>
+              )}
+            </div>
+
+            {/* Nav tabs — only after result */}
+            {result && (
+              <nav className="flex items-center gap-0.5 p-1 rounded-xl border border-slate-200/80 bg-white/70 shadow-sm">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    disabled={tab.disabled}
+                    onClick={() => !tab.disabled && setView(tab.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      view === tab.id
+                        ? "text-white shadow-sm"
+                        : tab.disabled
+                        ? "text-slate-300 cursor-not-allowed"
+                        : "text-slate-500 hover:text-slate-700 hover:bg-white/80"
+                    }`}
+                    style={view === tab.id
+                      ? { background: "linear-gradient(135deg, #6366f1, #7c3aed)" }
+                      : {}}
+                  >
+                    {tab.icon}
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </button>
+                ))}
+              </nav>
+            )}
+          </div>
         </div>
+
+        {/* PDF error strip */}
+        {pdfError && (
+          <div className="border-t border-red-100 bg-red-50 px-4 py-2 text-center text-xs text-red-600 font-medium">
+            ⚠ {pdfError} — please try another file.
+          </div>
+        )}
       </header>
 
+      {/* ── Main ───────────────────────────────────────────────────────────── */}
       <main className="max-w-4xl mx-auto px-4 py-10">
+
         {/* Global error */}
         {error && (
-          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700 font-medium shadow-sm">
-            <span className="text-red-500 mt-0.5">✕</span>
+          <div className="mb-6 animate-fade-up flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50/80 px-6 py-4 text-sm text-red-700 font-medium shadow-sm">
+            <span className="text-red-400 mt-0.5 text-base">✕</span>
             <div>
-              <p className="font-semibold">Something went wrong</p>
+              <p className="font-bold">Something went wrong</p>
               <p className="mt-0.5 font-normal text-red-600">{error}</p>
             </div>
           </div>
         )}
 
-        {/* ── HOME VIEW ─────────────────────────────────────────────────────── */}
+        {/* HOME VIEW */}
         {view === "home" && (
           <HomeView
             text={text} setText={(v) => { setText(v); setInputWarning(null); }}
             level={level} setLevel={setLevel}
             goal={goal} setGoal={setGoal}
             loading={loading} inputWarning={inputWarning}
-            pdfFile={pdfFile} pdfText={pdfText}
-            pdfParsing={pdfParsing} pdfError={pdfError}
-            handleFileChange={handleFileChange} removePdf={removePdf}
+            pdfText={pdfText}
             handleAnalyze={handleAnalyze} result={result}
             onStartQuiz={startQuiz}
             onViewMindmap={() => setView("mindmap")}
-            fileInputRef={fileInputRef}
           />
         )}
 
-        {/* ── QUIZ VIEW ─────────────────────────────────────────────────────── */}
+        {/* QUIZ VIEW */}
         {view === "quiz" && result && (
           <QuizView
             quiz={result.quiz}
@@ -208,7 +272,7 @@ export default function Home() {
           />
         )}
 
-        {/* ── REVISE VIEW ───────────────────────────────────────────────────── */}
+        {/* REVISE VIEW */}
         {view === "revise" && result && weakTopics.length > 0 && (
           <ReviseView
             explanation={result.explanation}
@@ -218,9 +282,9 @@ export default function Home() {
           />
         )}
 
-        {/* ── MINDMAP VIEW ──────────────────────────────────────────────────── */}
+        {/* MINDMAP VIEW */}
         {view === "mindmap" && result && (
-          <div className="space-y-5">
+          <div className="space-y-5 animate-fade-up">
             <div className="flex items-center gap-3">
               <button type="button" onClick={() => setView("home")}
                 className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
@@ -236,10 +300,12 @@ export default function Home() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white/60 backdrop-blur-sm py-5 mt-8">
+      {/* ── Footer ─────────────────────────────────────────────────────────── */}
+      <footer className="border-t border-white/60 py-6 mt-4"
+        style={{ background: "rgba(255,255,255,0.4)", backdropFilter: "blur(10px)" }}>
         <p className="text-center text-xs text-slate-400 font-medium tracking-wide">
-          Built for Hackathon &nbsp;·&nbsp; DoFlow AI Study Companion
+          Built for Hackathon &nbsp;·&nbsp; DoFlow AI Study Companion &nbsp;·&nbsp;
+          <span className="text-indigo-400">✦</span>
         </p>
       </footer>
     </div>
