@@ -8,16 +8,26 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { text, level, goal } = body;
 
-    const systemPrompt = `You are a personalized study assistant. You MUST respond with valid JSON only. No markdown, no explanation outside the JSON, no code fences. Return exactly this structure:
+    // Validate: text must not be empty
+    if (!text || typeof text !== "string" || text.trim().length === 0) {
+      return NextResponse.json(
+        { error: "Study material text is required." },
+        { status: 400 }
+      );
+    }
+
+    const systemPrompt = `You are a personalized study assistant.
+
+Return your response in JSON format with EXACTLY this structure. No markdown, no code fences, no extra text — pure JSON only:
 {
-  "explanation": "string - key concepts explained for the student level",
-  "key_points": ["string", "string", "string"],
-  "summary": "string - a short summary of the material",
+  "explanation": "",
+  "key_points": [],
+  "summary": "",
   "quiz": [
     {
-      "question": "string",
-      "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
-      "answer": "string - the correct option letter and text"
+      "question": "",
+      "options": ["", "", "", ""],
+      "answer": ""
     }
   ]
 }`;
@@ -27,13 +37,13 @@ export async function POST(req: NextRequest) {
 - Goal: ${goal}
 
 Study Material:
-${text}
+${text.trim()}
 
 Tasks:
-1. Explain key concepts suitable for the student level (explanation field)
-2. List the most important topics as bullet points (key_points array, at least 4 items)
-3. Write a short summary (summary field)
-4. Generate exactly 5 MCQ questions with 4 options each and the correct answer (quiz array)
+1. Explain key concepts suitable for the student level
+2. Highlight most important topics
+3. Provide a short summary
+4. Generate 5 MCQ questions with 4 options and correct answer
 
 Respond with valid JSON only.`;
 

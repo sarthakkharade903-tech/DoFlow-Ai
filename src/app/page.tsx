@@ -53,7 +53,7 @@ export default function Home() {
 
     try {
       const formData = new FormData();
-      formData.append("pdf", file);
+      formData.append("file", file);
 
       const res = await fetch("/api/parse-pdf", { method: "POST", body: formData });
       const data = await res.json();
@@ -124,12 +124,15 @@ export default function Home() {
   const getOptionStyle = (qi: number, opt: string, answer: string) => {
     if (!submitted) {
       return selected[qi] === opt
-        ? "border-indigo-500 bg-indigo-50 text-indigo-800"
-        : "border-slate-200 bg-white hover:bg-slate-50";
+        ? "border-indigo-500 bg-indigo-50 text-indigo-800 ring-2 ring-indigo-200"
+        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50";
     }
-    if (opt === answer) return "border-green-500 bg-green-50 text-green-800 font-semibold";
-    if (selected[qi] === opt && opt !== answer) return "border-red-400 bg-red-50 text-red-700";
-    return "border-slate-200 bg-white text-slate-400";
+    // Correct answer — always highlight green
+    if (opt === answer) return "border-green-500 bg-green-50 text-green-800 font-semibold ring-2 ring-green-200";
+    // User picked this but it's wrong
+    if (selected[qi] === opt && opt !== answer) return "border-red-400 bg-red-50 text-red-700 ring-2 ring-red-200";
+    // Unchosen, incorrect options — dim them
+    return "border-slate-100 bg-slate-50 text-slate-400 opacity-60";
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -365,47 +368,77 @@ export default function Home() {
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <h2 className="text-base font-bold text-slate-800 flex items-center gap-2 mb-6">
                 <Sparkles className="w-5 h-5 text-indigo-500" /> Quiz
-                {submitted && score !== null && (
-                  <span className={`ml-auto text-sm font-bold px-3 py-1 rounded-full ${score >= 4 ? "bg-green-100 text-green-700" : score >= 2 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}`}>
-                    Score: {score}/{result.quiz.length}
-                  </span>
-                )}
               </h2>
 
               <div className="space-y-8">
-                {result.quiz.map((q, qi) => (
-                  <div key={qi}>
-                    <p className="text-sm font-semibold text-slate-800 mb-3">
-                      Q{qi + 1}. {q.question}
-                    </p>
-                    <div className="space-y-2">
-                      {q.options.map((opt, oi) => {
-                        const isCorrect = submitted && opt === q.answer;
-                        const isWrong = submitted && selected[qi] === opt && opt !== q.answer;
-                        return (
-                          <button
-                            key={oi}
-                            type="button"
-                            disabled={submitted}
-                            onClick={() => !submitted && setSelected((prev) => ({ ...prev, [qi]: opt }))}
-                            className={`w-full text-left text-sm px-4 py-3 rounded-xl border transition-all flex items-center justify-between gap-2 ${getOptionStyle(qi, opt, q.answer)}`}
-                          >
-                            <span>{opt}</span>
-                            {isCorrect && <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />}
-                            {isWrong && <XCircle className="w-4 h-4 text-red-500 shrink-0" />}
-                          </button>
-                        );
-                      })}
+                {result.quiz.map((q, qi) => {
+                  const userAnswer = selected[qi];
+                  const isCorrect = submitted && userAnswer === q.answer;
+                  const isWrong = submitted && userAnswer !== undefined && userAnswer !== q.answer;
+                  const isUnanswered = submitted && userAnswer === undefined;
+
+                  return (
+                    <div key={qi} className={`rounded-xl p-4 border transition-all ${
+                      !submitted
+                        ? "border-transparent"
+                        : isCorrect
+                        ? "border-green-200 bg-green-50/40"
+                        : "border-red-200 bg-red-50/30"
+                    }`}>
+                      {/* Question header */}
+                      <div className="flex items-start gap-2 mb-3">
+                        {submitted && (
+                          <span className={`mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
+                            isCorrect ? "bg-green-500" : "bg-red-400"
+                          }`}>
+                            {isCorrect
+                              ? <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                              : <XCircle className="w-3.5 h-3.5 text-white" />}
+                          </span>
+                        )}
+                        <p className="text-sm font-semibold text-slate-800">
+                          Q{qi + 1}. {q.question}
+                        </p>
+                      </div>
+
+                      {/* Options */}
+                      <div className="space-y-2">
+                        {q.options.map((opt, oi) => {
+                          const optCorrect = submitted && opt === q.answer;
+                          const optWrong = submitted && selected[qi] === opt && opt !== q.answer;
+                          return (
+                            <button
+                              key={oi}
+                              type="button"
+                              disabled={submitted}
+                              onClick={() => !submitted && setSelected((prev) => ({ ...prev, [qi]: opt }))}
+                              className={`w-full text-left text-sm px-4 py-3 rounded-xl border transition-all flex items-center justify-between gap-2 ${
+                                getOptionStyle(qi, opt, q.answer)
+                              }`}
+                            >
+                              <span>{opt}</span>
+                              {optCorrect && <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />}
+                              {optWrong && <XCircle className="w-4 h-4 text-red-500 shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Correct answer hint — shown on wrong or unanswered */}
+                      {submitted && (isWrong || isUnanswered) && (
+                        <div className="mt-3 flex items-center gap-2 rounded-lg bg-green-100 border border-green-200 px-3 py-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                          <p className="text-xs font-semibold text-green-800">
+                            Correct answer: {q.answer}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    {submitted && selected[qi] !== q.answer && (
-                      <p className="mt-2 text-xs text-green-700 font-medium">
-                        ✓ Correct answer: {q.answer}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
+              {/* Submit button */}
               {!submitted && (
                 <button
                   id="submit-quiz-btn"
@@ -418,14 +451,32 @@ export default function Home() {
                 </button>
               )}
 
-              {submitted && (
-                <p className="mt-6 text-center text-sm text-slate-500">
-                  {score === result.quiz.length
-                    ? "🎉 Perfect score! Excellent work."
-                    : score! >= Math.ceil(result.quiz.length / 2)
-                    ? "👍 Good job! Review the ones you missed."
-                    : "📚 Keep studying — you'll get there!"}
-                </p>
+              {/* Score banner */}
+              {submitted && score !== null && (
+                <div className={`mt-8 rounded-2xl px-6 py-5 text-center border ${
+                  score === result.quiz.length
+                    ? "bg-green-50 border-green-200"
+                    : score >= Math.ceil(result.quiz.length / 2)
+                    ? "bg-yellow-50 border-yellow-200"
+                    : "bg-red-50 border-red-200"
+                }`}>
+                  <p className={`text-3xl font-extrabold tracking-tight ${
+                    score === result.quiz.length
+                      ? "text-green-700"
+                      : score >= Math.ceil(result.quiz.length / 2)
+                      ? "text-yellow-700"
+                      : "text-red-600"
+                  }`}>
+                    {score} / {result.quiz.length}
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-slate-600">
+                    {score === result.quiz.length
+                      ? "🎉 Perfect score! Excellent work."
+                      : score >= Math.ceil(result.quiz.length / 2)
+                      ? "👍 Good job! Review the ones you missed."
+                      : "📚 Keep studying — you'll get there!"}
+                  </p>
+                </div>
               )}
             </div>
           </div>
